@@ -1,6 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
 import { BookOpen } from 'lucide-react';
-import { ParkingRecord } from '../App';
+import { ParkingRecord, LocationStatus } from '../types';
+import {
+  LIBRARY_COORDS,
+  ALLOWED_RADIUS_METERS,
+  ADMIN_PASSWORD,
+  ADMIN_SHIFT_TRIGGER_COUNT,
+  DURATIONS,
+  LOCATIONS
+} from '../constants';
+import { calculateDistance } from '../utils';
 
 interface UserInputPageProps {
   onSubmit: (plateNumber: string, duration: string, location: string) => void;
@@ -17,40 +26,14 @@ export function UserInputPage({ onSubmit, onAdminAccess, existingRecords }: User
   const [passwordError, setPasswordError] = useState(false);
   
   // GPS 위치 확인 상태
-  const [locationStatus, setLocationStatus] = useState<'checking' | 'allowed' | 'denied' | 'out-of-range'>('checking');
+  const [locationStatus, setLocationStatus] = useState<LocationStatus>('checking');
   const [distanceFromLibrary, setDistanceFromLibrary] = useState<number | null>(null);
   
   // 차량번호 입력 필드 ref (자동 포커스용)
   const plateInputRef = useRef<HTMLInputElement>(null);
 
-  const durations = ['30분', '1시간', '1시간 30분', '2시간', '2시간 30분', '3시간'];
-  const locations = ['어린이', '종합', '열람실'];
-  
-  // 서농도서관 좌표 (경기도 용인시 처인구)
-  const LIBRARY_COORDS = {
-    latitude: 37.237279683072,
-    longitude: 127.06868865060746
-  };
-  const ALLOWED_RADIUS_METERS = 500; // 허용 반경 500m
-
   // 중복 차량번호 확인
   const duplicateCount = existingRecords.filter(r => r.plateNumber === plateNumber).length;
-  
-  // 두 좌표 간 거리 계산 (Haversine formula, 미터 단위)
-  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
-    const R = 6371e3; // 지구 반지름 (미터)
-    const φ1 = (lat1 * Math.PI) / 180;
-    const φ2 = (lat2 * Math.PI) / 180;
-    const Δφ = ((lat2 - lat1) * Math.PI) / 180;
-    const Δλ = ((lon2 - lon1) * Math.PI) / 180;
-
-    const a =
-      Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-      Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-    return R * c; // 거리 (미터)
-  };
 
   // 페이지 로드시 GPS 위치 확인 및 자동 포커스
   useEffect(() => {
@@ -102,8 +85,8 @@ export function UserInputPage({ onSubmit, onAdminAccess, existingRecords }: User
         // 타이머 리셋
         clearTimeout(resetTimer);
         
-        // 5번 눌렀으면 관리자 모달 열기
-        if (shiftCount >= 5) {
+        // ADMIN_SHIFT_TRIGGER_COUNT번 눌렀으면 관리자 모달 열기
+        if (shiftCount >= ADMIN_SHIFT_TRIGGER_COUNT) {
           setShowAdminModal(true);
           shiftCount = 0;
         } else {
@@ -131,7 +114,7 @@ export function UserInputPage({ onSubmit, onAdminAccess, existingRecords }: User
   };
 
   const handleAdminLogin = () => {
-    if (adminPassword === 'admin123') {
+    if (adminPassword === ADMIN_PASSWORD) {
       setShowAdminModal(false);
       setAdminPassword('');
       setPasswordError(false);
@@ -242,7 +225,7 @@ export function UserInputPage({ onSubmit, onAdminAccess, existingRecords }: User
             이용 장소
           </label>
           <div className="grid grid-cols-3 gap-2">
-            {locations.map((location) => (
+            {LOCATIONS.map((location) => (
               <button
                 key={location}
                 onClick={() => setSelectedLocation(location)}
@@ -264,7 +247,7 @@ export function UserInputPage({ onSubmit, onAdminAccess, existingRecords }: User
             시간
           </label>
           <div className="grid grid-cols-2 gap-2">
-            {durations.map((duration) => (
+            {DURATIONS.map((duration) => (
               <button
                 key={duration}
                 onClick={() => setSelectedDuration(duration)}

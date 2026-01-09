@@ -1,6 +1,12 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, Search, Trash2, RotateCcw } from 'lucide-react';
-import { ParkingRecord } from '../App';
+import { ParkingRecord } from '../types';
+import {
+  HIGHLIGHT_DURATION_MS,
+  REFRESH_ANIMATION_DURATION_MS,
+  TIME_UPDATE_INTERVAL_MS
+} from '../constants';
+import { formatDate, formatTime, getElapsedTime, isToday } from '../utils';
 
 interface AdminDashboardProps {
   onBack: () => void;
@@ -20,7 +26,7 @@ export function AdminDashboard({ onBack, records, onDeleteRecord, lastAddedRecor
   const handleRefresh = () => {
     setIsRefreshing(true);
     setCurrentTime(new Date());
-    setTimeout(() => setIsRefreshing(false), 500);
+    setTimeout(() => setIsRefreshing(false), REFRESH_ANIMATION_DURATION_MS);
   };
 
   // 자동 새로고침 (30초마다)
@@ -36,7 +42,7 @@ export function AdminDashboard({ onBack, records, onDeleteRecord, lastAddedRecor
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
-    }, 1000);
+    }, TIME_UPDATE_INTERVAL_MS);
 
     return () => clearInterval(timer);
   }, []);
@@ -45,39 +51,10 @@ export function AdminDashboard({ onBack, records, onDeleteRecord, lastAddedRecor
   useEffect(() => {
     if (lastAddedRecordId) {
       setHighlightId(lastAddedRecordId);
-      const t = setTimeout(() => setHighlightId(null), 3000);
+      const t = setTimeout(() => setHighlightId(null), HIGHLIGHT_DURATION_MS);
       return () => clearTimeout(t);
     }
   }, [lastAddedRecordId]);
-
-  // 경과시간 계산
-  const getElapsedTime = (timestamp: Date) => {
-    const diff = Math.floor((currentTime.getTime() - new Date(timestamp).getTime()) / 1000 / 60); // 분
-    
-    if (diff < 1) return '방금 전';
-    if (diff < 60) return `${diff}분 전`;
-    
-    const hours = Math.floor(diff / 60);
-    const minutes = diff % 60;
-    
-    if (hours < 24) {
-      return minutes > 0 ? `${hours}시간 ${minutes}분 전` : `${hours}시간 전`;
-    }
-    
-    const days = Math.floor(hours / 24);
-    return `${days}일 전`;
-  };
-
-  // 오늘 날짜 확인
-  const isToday = (date: Date) => {
-    const today = new Date();
-    const checkDate = new Date(date);
-    return (
-      checkDate.getDate() === today.getDate() &&
-      checkDate.getMonth() === today.getMonth() &&
-      checkDate.getFullYear() === today.getFullYear()
-    );
-  };
 
   // 검색 및 날짜 필터링
   const filteredRecords = records.filter(record => {
@@ -85,17 +62,6 @@ export function AdminDashboard({ onBack, records, onDeleteRecord, lastAddedRecor
     const matchesDate = showTodayOnly ? isToday(record.timestamp) : true;
     return matchesSearch && matchesDate;
   });
-
-  // 날짜 포맷팅
-  const formatDate = (date: Date) => {
-    const d = new Date(date);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  };
-
-  const formatTime = (date: Date) => {
-    const d = new Date(date);
-    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-  };
 
   return (
     <div className="min-h-screen bg-gray-100 p-5">
@@ -240,7 +206,7 @@ export function AdminDashboard({ onBack, records, onDeleteRecord, lastAddedRecor
                         {formatDate(record.timestamp)} {formatTime(record.timestamp)}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600">
-                        {getElapsedTime(record.timestamp)}
+                        {getElapsedTime(record.timestamp, currentTime)}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">

@@ -1,18 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { UserInputPage } from './components/UserInputPage';
 import { SuccessPage } from './components/SuccessPage';
 import { AdminDashboard } from './components/AdminDashboard';
-
-export interface ParkingRecord {
-  id: string;
-  timestamp: Date;
-  plateNumber: string;
-  location: string;
-  requestedTime: string;
-}
+import { ParkingRecord, ViewType } from './types';
+import { STORAGE_KEY } from './constants';
+import { loadParkingRecordsFromStorage, saveParkingRecordsToStorage } from './utils';
 
 export default function App() {
-  const [currentView, setCurrentView] = useState<'input' | 'success' | 'admin'>('input');
+  const [currentView, setCurrentView] = useState<ViewType>('input');
   const [registrationData, setRegistrationData] = useState<{
     plateNumber: string;
     duration: string;
@@ -24,42 +19,25 @@ export default function App() {
   const [parkingRecords, setParkingRecords] = useState<ParkingRecord[]>([]);
 
   // 로컬스토리지 로드 및 저장 (삭제/추가가 새로고침 후에도 유지)
+  // 초기 로드
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem('parkingRecords');
-      if (stored) {
-        const parsed: Array<Omit<ParkingRecord, 'timestamp'> & { timestamp: string }> = JSON.parse(stored);
-        setParkingRecords(
-          parsed.map((r) => ({ ...r, timestamp: new Date(r.timestamp) }))
-        );
-      } else {
-        // 최초 실행 시 빈 배열로 시작
-        localStorage.setItem('parkingRecords', JSON.stringify([]));
-      }
-    } catch (e) {
-      // 저장/로드 실패 시 콘솔에만 기록 (UI 영향 없음)
-      console.warn('Failed to load parkingRecords from localStorage', e);
+    const loaded = loadParkingRecordsFromStorage();
+    if (loaded) {
+      setParkingRecords(loaded);
+    } else {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // 변경사항 저장
   useEffect(() => {
-    try {
-      localStorage.setItem(
-        'parkingRecords',
-        JSON.stringify(
-          parkingRecords.map((r) => ({ ...r, timestamp: r.timestamp.toISOString() }))
-        )
-      );
-    } catch (e) {
-      console.warn('Failed to save parkingRecords to localStorage', e);
-    }
+    saveParkingRecordsToStorage(parkingRecords);
   }, [parkingRecords]);
 
   // 다른 탭/창에서 localStorage가 변경되면 실시간으로 동기화
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
-      if (e.key === 'parkingRecords' && e.newValue) {
+      if (e.key === STORAGE_KEY && e.newValue) {
         try {
           const parsed: Array<Omit<ParkingRecord, 'timestamp'> & { timestamp: string }> = JSON.parse(e.newValue);
           setParkingRecords(parsed.map((r) => ({ ...r, timestamp: new Date(r.timestamp) })));
@@ -74,9 +52,6 @@ export default function App() {
   }, []);
 
   const handleSubmit = (plateNumber: string, duration: string, location: string) => {
-    // 중복 등록 확인
-    const existingRecords = parkingRecords.filter(r => r.plateNumber === plateNumber);
-    
     // 새 기록 추가
     const newRecord: ParkingRecord = {
       id: Date.now().toString(),
@@ -98,16 +73,9 @@ export default function App() {
 
   const handleClose = () => {
     // 입력 페이지로 돌아갈 때 localStorage에서 최신 데이터 로드
-    try {
-      const stored = localStorage.getItem('parkingRecords');
-      if (stored) {
-        const parsed: Array<Omit<ParkingRecord, 'timestamp'> & { timestamp: string }> = JSON.parse(stored);
-        setParkingRecords(
-          parsed.map((r) => ({ ...r, timestamp: new Date(r.timestamp) }))
-        );
-      }
-    } catch (e) {
-      console.warn('Failed to refresh parkingRecords from localStorage', e);
+    const loaded = loadParkingRecordsFromStorage();
+    if (loaded) {
+      setParkingRecords(loaded);
     }
     setCurrentView('input');
     setRegistrationData(null);
@@ -115,16 +83,9 @@ export default function App() {
 
   const handleViewAdmin = () => {
     // 관리자 페이지 진입 시 최신 localStorage 데이터 로드
-    try {
-      const stored = localStorage.getItem('parkingRecords');
-      if (stored) {
-        const parsed: Array<Omit<ParkingRecord, 'timestamp'> & { timestamp: string }> = JSON.parse(stored);
-        setParkingRecords(
-          parsed.map((r) => ({ ...r, timestamp: new Date(r.timestamp) }))
-        );
-      }
-    } catch (e) {
-      console.warn('Failed to refresh parkingRecords from localStorage', e);
+    const loaded = loadParkingRecordsFromStorage();
+    if (loaded) {
+      setParkingRecords(loaded);
     }
     setCurrentView('admin');
   };
