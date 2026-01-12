@@ -9,7 +9,7 @@ export const LIBRARY_COORDS: Coordinates = {
 export const ALLOWED_RADIUS_METERS = 500;
 
 // 관리자 설정
-export const ADMIN_PASSWORD = 'admin123';
+export const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || 'admin123';
 export const ADMIN_SHIFT_TRIGGER_COUNT = 5;
 export const ADMIN_LONG_PRESS_MS = 1500;
 

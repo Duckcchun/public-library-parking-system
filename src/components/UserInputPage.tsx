@@ -30,6 +30,7 @@ export function UserInputPage({ onSubmit, onAdminAccess, existingRecords }: User
   // GPS 위치 확인 상태
   const [locationStatus, setLocationStatus] = useState<LocationStatus>('checking');
   const [distanceFromLibrary, setDistanceFromLibrary] = useState<number | null>(null);
+  const [isCheckingLocation, setIsCheckingLocation] = useState(false);
   
   // 차량번호 입력 필드 ref (자동 포커스용)
   const plateInputRef = useRef<HTMLInputElement>(null);
@@ -39,6 +40,7 @@ export function UserInputPage({ onSubmit, onAdminAccess, existingRecords }: User
 
   // 위치 확인 로직 함수화 및 페이지 로드시 자동 실행
   const checkLocation = () => {
+    setIsCheckingLocation(true);
     setLocationStatus('checking');
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
@@ -55,10 +57,12 @@ export function UserInputPage({ onSubmit, onAdminAccess, existingRecords }: User
           } else {
             setLocationStatus('out-of-range');
           }
+          setIsCheckingLocation(false);
         },
         (error) => {
           console.error('위치 권한 거부:', error);
           setLocationStatus('denied');
+          setIsCheckingLocation(false);
         },
         {
           enableHighAccuracy: true,
@@ -68,6 +72,7 @@ export function UserInputPage({ onSubmit, onAdminAccess, existingRecords }: User
       );
     } else {
       setLocationStatus('denied');
+      setIsCheckingLocation(false);
     }
   };
 
@@ -231,9 +236,15 @@ export function UserInputPage({ onSubmit, onAdminAccess, existingRecords }: User
                <button
                  type="button"
                  onClick={checkLocation}
-                 className="px-3 py-2 text-sm font-bold rounded border-2 border-gray-300 hover:bg-gray-50 cursor-pointer"
+                 disabled={isCheckingLocation}
+                 className={`px-3 py-2 text-sm font-bold rounded border-2 border-gray-300 hover:bg-gray-50 cursor-pointer flex items-center gap-2 ${
+                   isCheckingLocation ? 'opacity-50 cursor-not-allowed' : ''
+                 }`}
                  aria-label="위치 다시 확인"
                >
+                 {isCheckingLocation && (
+                   <span className="inline-block w-3 h-3 border-2 border-gray-600 border-t-transparent rounded-full animate-spin"></span>
+                 )}
                  위치 다시 확인
                </button>
                {locationStatus === 'denied' && (
@@ -241,8 +252,7 @@ export function UserInputPage({ onSubmit, onAdminAccess, existingRecords }: User
                    type="button"
                    onClick={() => setShowPermissionHelp(true)}
                    className="px-3 py-2 text-sm font-bold rounded border-2 border-gray-300 hover:bg-gray-50 cursor-pointer"
-                   aria-label="권한 설정 가이드"
-                  권한 설정 가이드
+                   aria-label="권한 설정 가이드"                 >                  권한 설정 가이드
                 </button>
               )}
             </div>
@@ -359,13 +369,16 @@ export function UserInputPage({ onSubmit, onAdminAccess, existingRecords }: User
             </span>
           ) : '등록하기'}
         </button>
+        <p className="text-xs text-gray-500 text-center mt-2">
+          관리자: 로고 길게 누르기 또는 Shift×5
+        </p>
       </footer>
 
       {/* Admin Password Modal */}
       {showAdminModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-5">
           <div className="bg-white p-6 max-w-sm w-full">
-            <h2 className="text-xl font-bold text-gray-800 mb-2">관리자 인증</h2>
+            <h2 className="text-xl font-bold text-gray-800 mb-4">관리자 인증</h2>
             <p className="text-sm text-gray-600 mb-4">비밀번호를 입력하세요</p>
             
             <input

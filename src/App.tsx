@@ -51,6 +51,34 @@ export default function App() {
     return () => window.removeEventListener('storage', onStorage);
   }, []);
 
+  // BroadcastChannel로 동일 탭 내 실시간 동기화 강화
+  useEffect(() => {
+    if (typeof BroadcastChannel === 'undefined') return;
+
+    const channel = new BroadcastChannel('parking-records-sync');
+
+    channel.onmessage = (event) => {
+      if (event.data.type === 'update') {
+        const loaded = loadParkingRecordsFromStorage();
+        if (loaded) {
+          setParkingRecords(loaded);
+        }
+      }
+    };
+
+    return () => channel.close();
+  }, []);
+
+  // 데이터 변경 시 BroadcastChannel로 알림
+  useEffect(() => {
+    if (typeof BroadcastChannel === 'undefined') return;
+    if (parkingRecords.length === 0) return;
+
+    const channel = new BroadcastChannel('parking-records-sync');
+    channel.postMessage({ type: 'update' });
+    channel.close();
+  }, [parkingRecords]);
+
   const handleSubmit = (plateNumber: string, duration: string, location: string) => {
     // 새 기록 추가
     const newRecord: ParkingRecord = {
