@@ -209,38 +209,39 @@ export function UserInputPage({ onSubmit, onAdminAccess, existingRecords }: User
 
         {/* 위치 상태 및 재시도 안내 */}
         {locationStatus !== 'allowed' && (
-          <div className="mb-4">
-            {locationStatus === 'checking' && (
-              <p className="text-sm text-gray-600 text-center">위치 확인 중입니다...</p>
-            )}
-            {locationStatus === 'denied' && (
-              <div className="bg-red-50 border-l-4 border-red-500 p-3">
-                <p className="text-sm text-red-700">
-                  위치 권한이 거부되어 등록할 수 없습니다. 브라우저 설정에서 위치 권한을 허용한 후 다시 시도하세요.
-                </p>
-              </div>
-            )}
-            {locationStatus === 'out-of-range' && (
-              <div className="bg-amber-50 border-l-4 border-amber-500 p-3">
-                <p className="text-sm text-amber-800">
-                  현재 위치가 도서관에서 {distanceFromLibrary}m 떨어져 있습니다. 도서관 내에서 다시 시도해주세요.
-                </p>
-              </div>
-            )}
-            <div className="flex justify-center mt-2 gap-2">
-              <button
-                type="button"
-                onClick={checkLocation}
-                className="px-3 py-2 text-sm font-bold rounded border-2 border-gray-300 hover:bg-gray-50 cursor-pointer"
-              >
-                위치 다시 확인
-              </button>
-              {locationStatus === 'denied' && (
-                <button
-                  type="button"
-                  onClick={() => setShowPermissionHelp(true)}
-                  className="px-3 py-2 text-sm font-bold rounded border-2 border-gray-300 hover:bg-gray-50 cursor-pointer"
-                >
+           <div className="mb-4" role="status" aria-live="polite" aria-atomic="true">
+             {locationStatus === 'checking' && (
+               <p className="text-sm text-gray-600 text-center">위치 확인 중입니다...</p>
+             )}
+             {locationStatus === 'denied' && (
+               <div className="bg-red-50 border-l-4 border-red-500 p-3">
+                 <p className="text-sm text-red-700">
+                   위치 권한이 거부되어 등록할 수 없습니다. 브라우저 설정에서 위치 권한을 허용한 후 다시 시도하세요.
+                 </p>
+               </div>
+             )}
+             {locationStatus === 'out-of-range' && (
+               <div className="bg-amber-50 border-l-4 border-amber-500 p-3">
+                 <p className="text-sm text-amber-800">
+                   현재 위치가 도서관에서 {distanceFromLibrary}m 떨어져 있습니다. 도서관 내에서 다시 시도해주세요.
+                 </p>
+               </div>
+             )}
+             <div className="flex justify-center mt-2 gap-2">
+               <button
+                 type="button"
+                 onClick={checkLocation}
+                 className="px-3 py-2 text-sm font-bold rounded border-2 border-gray-300 hover:bg-gray-50 cursor-pointer"
+                 aria-label="위치 다시 확인"
+               >
+                 위치 다시 확인
+               </button>
+               {locationStatus === 'denied' && (
+                 <button
+                   type="button"
+                   onClick={() => setShowPermissionHelp(true)}
+                   className="px-3 py-2 text-sm font-bold rounded border-2 border-gray-300 hover:bg-gray-50 cursor-pointer"
+                   aria-label="권한 설정 가이드"
                   권한 설정 가이드
                 </button>
               )}
