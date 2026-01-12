@@ -6,6 +6,7 @@ import {
   ALLOWED_RADIUS_METERS,
   ADMIN_PASSWORD,
   ADMIN_LONG_PRESS_MS,
+  ADMIN_SHIFT_TRIGGER_COUNT,
   DURATIONS,
   LOCATIONS
 } from '../constants';
@@ -73,6 +74,35 @@ export function UserInputPage({ onSubmit, onAdminAccess, existingRecords }: User
   useEffect(() => {
     plateInputRef.current?.focus();
     checkLocation();
+  }, []);
+
+  // 키보드 단축키: Shift 키 5회 → 관리자 모달
+  useEffect(() => {
+    let shiftCount = 0;
+    let resetTimer: number | null = null;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Shift') {
+        shiftCount++;
+        if (resetTimer) window.clearTimeout(resetTimer);
+
+        if (shiftCount >= ADMIN_SHIFT_TRIGGER_COUNT) {
+          setShowAdminModal(true);
+          shiftCount = 0;
+          return;
+        }
+
+        resetTimer = window.setTimeout(() => {
+          shiftCount = 0;
+        }, 1500);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      if (resetTimer) window.clearTimeout(resetTimer);
+    };
   }, []);
 
   // 관리자 진입: 로고 길게 누르기
