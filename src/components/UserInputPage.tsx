@@ -5,7 +5,7 @@ import {
   LIBRARY_COORDS,
   ALLOWED_RADIUS_METERS,
   ADMIN_PASSWORD,
-  ADMIN_SHIFT_TRIGGER_COUNT,
+  ADMIN_LONG_PRESS_MS,
   DURATIONS,
   LOCATIONS
 } from '../constants';
@@ -35,11 +35,9 @@ export function UserInputPage({ onSubmit, onAdminAccess, existingRecords }: User
   // 중복 차량번호 확인
   const duplicateCount = existingRecords.filter(r => r.plateNumber === plateNumber).length;
 
-  // 페이지 로드시 GPS 위치 확인 및 자동 포커스
-  useEffect(() => {
-    plateInputRef.current?.focus();
-    
-    // GPS 위치 권한 요청 및 확인
+  // 위치 확인 로직 함수화 및 페이지 로드시 자동 실행
+  const checkLocation = () => {
+    setLocationStatus('checking');
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -49,9 +47,7 @@ export function UserInputPage({ onSubmit, onAdminAccess, existingRecords }: User
             LIBRARY_COORDS.latitude,
             LIBRARY_COORDS.longitude
           );
-          
           setDistanceFromLibrary(Math.round(distance));
-          
           if (distance <= ALLOWED_RADIUS_METERS) {
             setLocationStatus('allowed');
           } else {
@@ -65,45 +61,33 @@ export function UserInputPage({ onSubmit, onAdminAccess, existingRecords }: User
         {
           enableHighAccuracy: true,
           timeout: 10000,
-          maximumAge: 0
+          maximumAge: 0,
         }
       );
     } else {
       setLocationStatus('denied');
     }
-  }, []);
+  };
 
-  // 관리자 단축키: Shift 키 5번 연속 누르기
   useEffect(() => {
-    let shiftCount = 0;
-    let resetTimer: NodeJS.Timeout;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Shift') {
-        shiftCount++;
-        
-        // 타이머 리셋
-        clearTimeout(resetTimer);
-        
-        // ADMIN_SHIFT_TRIGGER_COUNT번 눌렀으면 관리자 모달 열기
-        if (shiftCount >= ADMIN_SHIFT_TRIGGER_COUNT) {
-          setShowAdminModal(true);
-          shiftCount = 0;
-        } else {
-          // 2초 후 카운트 리셋
-          resetTimer = setTimeout(() => {
-            shiftCount = 0;
-          }, 2000);
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      clearTimeout(resetTimer);
-    };
+    plateInputRef.current?.focus();
+    checkLocation();
   }, []);
+
+  // 관리자 진입: 로고 길게 누르기
+  const adminPressTimerRef = useRef<number | null>(null);
+  const startAdminPress = () => {
+    if (adminPressTimerRef.current) window.clearTimeout(adminPressTimerRef.current);
+    adminPressTimerRef.current = window.setTimeout(() => {
+      setShowAdminModal(true);
+    }, ADMIN_LONG_PRESS_MS);
+  };
+  const cancelAdminPress = () => {
+    if (adminPressTimerRef.current) {
+      window.clearTimeout(adminPressTimerRef.current);
+      adminPressTimerRef.current = null;
+    }
+  };
 
   // 차량번호 입력 핸들러 (4자리 숫자만)
   const handlePlateNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -142,7 +126,15 @@ export function UserInputPage({ onSubmit, onAdminAccess, existingRecords }: User
       <header className="bg-[#1e4a8a] text-white px-5 py-4">
         <div className="flex items-center gap-3">
           <div className="w-11 h-11 bg-white rounded flex items-center justify-center">
-            <BookOpen className="w-6 h-6 text-[#1e4a8a]" />
+            <BookOpen className="w-6 h-6 text-[#1e4a8a]" 
+              onMouseDown={startAdminPress}
+              onMouseUp={cancelAdminPress}
+              onMouseLeave={cancelAdminPress}
+              onTouchStart={startAdminPress}
+              onTouchEnd={cancelAdminPress}
+              onTouchCancel={cancelAdminPress}
+              title="관리자 모드"
+            />
           </div>
           <div>
             <h1 className="text-xl font-bold">도서관 이용확인증</h1>
@@ -181,6 +173,38 @@ export function UserInputPage({ onSubmit, onAdminAccess, existingRecords }: User
             <p className="text-xs text-orange-700 mt-1">
               현재 위치가 도서관에서 {distanceFromLibrary}m 떨어져 있습니다. 도서관 내에서 등록해주세요.
             </p>
+          </div>
+        )}
+
+        {/* 위치 상태 및 재시도 안내 */}
+        {locationStatus !== 'allowed' && (
+          <div className="mb-4">
+            {locationStatus === 'checking' && (
+              <p className="text-sm text-gray-600 text-center">위치 확인 중입니다...</p>
+            )}
+            {locationStatus === 'denied' && (
+              <div className="bg-red-50 border-l-4 border-red-500 p-3">
+                <p className="text-sm text-red-700">
+                  위치 권한이 거부되어 등록할 수 없습니다. 브라우저 설정에서 위치 권한을 허용한 후 다시 시도하세요.
+                </p>
+              </div>
+            )}
+            {locationStatus === 'out-of-range' && (
+              <div className="bg-amber-50 border-l-4 border-amber-500 p-3">
+                <p className="text-sm text-amber-800">
+                  현재 위치가 도서관에서 {distanceFromLibrary}m 떨어져 있습니다. 도서관 내에서 다시 시도해주세요.
+                </p>
+              </div>
+            )}
+            <div className="flex justify-center mt-2">
+              <button
+                type="button"
+                onClick={checkLocation}
+                className="px-3 py-2 text-sm font-bold rounded border-2 border-gray-300 hover:bg-gray-50 cursor-pointer"
+              >
+                위치 다시 확인
+              </button>
+            </div>
           </div>
         )}
 

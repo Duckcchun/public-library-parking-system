@@ -11,6 +11,7 @@ export const ALLOWED_RADIUS_METERS = 500;
 // 관리자 설정
 export const ADMIN_PASSWORD = 'admin123';
 export const ADMIN_SHIFT_TRIGGER_COUNT = 5;
+export const ADMIN_LONG_PRESS_MS = 1500;
 
 // 시간 옵션
 export const DURATIONS = ['30분', '1시간', '1시간 30분', '2시간', '2시간 30분', '3시간'] as const;
