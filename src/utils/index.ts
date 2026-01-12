@@ -95,3 +95,14 @@ export const saveParkingRecordsToStorage = (records: ParkingRecord[]): void => {
     console.warn('Failed to save parkingRecords to localStorage', e);
   }
 };
+
+// 플랫폼/브라우저 간단 감지 (권한 가이드용)
+export type Platform = 'ios' | 'android' | 'desktop';
+
+export const getPlatform = (): Platform => {
+  if (typeof navigator === 'undefined') return 'desktop';
+  const ua = navigator.userAgent || navigator.vendor;
+  if (/iPad|iPhone|iPod/.test(ua)) return 'ios';
+  if (/Android/i.test(ua)) return 'android';
+  return 'desktop';
+};

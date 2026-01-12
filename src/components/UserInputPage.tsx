@@ -9,7 +9,7 @@ import {
   DURATIONS,
   LOCATIONS
 } from '../constants';
-import { calculateDistance } from '../utils';
+import { calculateDistance, getPlatform } from '../utils';
 
 interface UserInputPageProps {
   onSubmit: (plateNumber: string, duration: string, location: string) => void;
@@ -24,6 +24,7 @@ export function UserInputPage({ onSubmit, onAdminAccess, existingRecords }: User
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [adminPassword, setAdminPassword] = useState('');
   const [passwordError, setPasswordError] = useState(false);
+  const [showPermissionHelp, setShowPermissionHelp] = useState(false);
   
   // GPS 위치 확인 상태
   const [locationStatus, setLocationStatus] = useState<LocationStatus>('checking');
@@ -196,7 +197,7 @@ export function UserInputPage({ onSubmit, onAdminAccess, existingRecords }: User
                 </p>
               </div>
             )}
-            <div className="flex justify-center mt-2">
+            <div className="flex justify-center mt-2 gap-2">
               <button
                 type="button"
                 onClick={checkLocation}
@@ -204,6 +205,15 @@ export function UserInputPage({ onSubmit, onAdminAccess, existingRecords }: User
               >
                 위치 다시 확인
               </button>
+              {locationStatus === 'denied' && (
+                <button
+                  type="button"
+                  onClick={() => setShowPermissionHelp(true)}
+                  className="px-3 py-2 text-sm font-bold rounded border-2 border-gray-300 hover:bg-gray-50 cursor-pointer"
+                >
+                  권한 설정 가이드
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -364,6 +374,64 @@ export function UserInputPage({ onSubmit, onAdminAccess, existingRecords }: User
                 className="flex-1 py-2 bg-[#1e4a8a] text-white rounded hover:bg-[#1e3a6a] font-bold cursor-pointer"
               >
                 확인
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Permission Help Modal */}
+      {showPermissionHelp && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-5">
+          <div className="bg-white p-6 max-w-sm w-full">
+            <h2 className="text-xl font-bold text-gray-800 mb-2">위치 권한 설정 가이드</h2>
+            {(() => {
+              const platform = getPlatform();
+              if (platform === 'ios') {
+                return (
+                  <ol className="list-decimal pl-5 text-sm text-gray-700 space-y-1">
+                    <li>설정 앱 → 개인정보 보호 및 보안 → 위치 서비스</li>
+                    <li>Safari 웹사이트 또는 사용하는 브라우저 선택</li>
+                    <li>허용: "앱을 사용하는 동안" 또는 "다음에 확인"</li>
+                    <li>브라우저 재실행 후 등록 다시 시도</li>
+                  </ol>
+                );
+              }
+              if (platform === 'android') {
+                return (
+                  <ol className="list-decimal pl-5 text-sm text-gray-700 space-y-1">
+                    <li>설정 → 앱 → Chrome(또는 사용하는 브라우저)</li>
+                    <li>권한 → 위치 → 허용</li>
+                    <li>브라우저에서 ⋮ 메뉴 → 설정 → 사이트 설정 → 위치 허용 확인</li>
+                    <li>브라우저 재실행 후 등록 다시 시도</li>
+                  </ol>
+                );
+              }
+              return (
+                <ol className="list-decimal pl-5 text-sm text-gray-700 space-y-1">
+                  <li>주소창 왼쪽 자물쇠 아이콘 클릭</li>
+                  <li>사이트 설정 또는 권한 관리 선택</li>
+                  <li>위치를 "허용"으로 변경</li>
+                  <li>페이지 새로고침 후 다시 시도</li>
+                </ol>
+              );
+            })()}
+
+            <div className="flex gap-2 mt-4">
+              <button
+                onClick={() => setShowPermissionHelp(false)}
+                className="flex-1 py-2 text-gray-700 border-2 border-gray-300 rounded hover:bg-gray-50 font-bold cursor-pointer"
+              >
+                닫기
+              </button>
+              <button
+                onClick={() => {
+                  setShowPermissionHelp(false);
+                  checkLocation();
+                }}
+                className="flex-1 py-2 bg-[#1e4a8a] text-white rounded hover:bg-[#1e3a6a] font-bold cursor-pointer"
+              >
+                다시 확인
               </button>
             </div>
           </div>
