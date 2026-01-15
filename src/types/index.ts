@@ -12,6 +12,6 @@ export interface Coordinates {
   longitude: number;
 }
 
-export type LocationStatus = 'checking' | 'allowed' | 'denied' | 'out-of-range';
+export type LocationStatus = 'pending' | 'checking' | 'allowed' | 'denied' | 'out-of-range';
 
 export type ViewType = 'input' | 'success' | 'admin';

@@ -28,7 +28,7 @@ export function UserInputPage({ onSubmit, onAdminAccess, existingRecords }: User
   const [showPermissionHelp, setShowPermissionHelp] = useState(false);
   
   // GPS 위치 확인 상태
-  const [locationStatus, setLocationStatus] = useState<LocationStatus>('checking');
+  const [locationStatus, setLocationStatus] = useState<LocationStatus>('pending');
   const [distanceFromLibrary, setDistanceFromLibrary] = useState<number | null>(null);
   const [isCheckingLocation, setIsCheckingLocation] = useState(false);
   
@@ -78,7 +78,6 @@ export function UserInputPage({ onSubmit, onAdminAccess, existingRecords }: User
 
   useEffect(() => {
     plateInputRef.current?.focus();
-    checkLocation();
   }, []);
 
   useEffect(() => {
@@ -179,8 +178,29 @@ export function UserInputPage({ onSubmit, onAdminAccess, existingRecords }: User
       {/* Main Content */}
       <main className="flex-1 px-5 py-6 bg-white">
         {/* GPS Location Status */}
+        {locationStatus === 'pending' && (
+          <div className="mb-6 bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
+            <p className="text-sm text-blue-800 font-semibold mb-3">
+              📍 위치 확인이 필요합니다
+            </p>
+            <p className="text-xs text-blue-700 mb-3 leading-relaxed">
+              서농도서관 내에서 주차 등록이 가능합니다. 아래 버튼을 눌러 위치를 확인해주세요.<br />
+              <span className="inline-block mt-1 text-blue-600 font-semibold">💡 팁: "이번만 허용"을 선택하면 웹페이지를 닫을 때 권한이 자동으로 해제됩니다</span>
+            </p>
+            <button
+              onClick={checkLocation}
+              disabled={isCheckingLocation}
+              className={`w-full px-4 py-3 font-bold text-white rounded bg-[#1e4a8a] hover:bg-[#163862] transition-colors ${
+                isCheckingLocation ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'
+              }`}
+            >
+              {isCheckingLocation ? '위치 확인 중...' : '위치 확인하기'}
+            </button>
+          </div>
+        )}
+        
         {locationStatus === 'checking' && (
-          <div className="mb-6 bg-blue-50 border-l-4 border-blue-500 p-4">
+          <div className="mb-6 bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
             <p className="text-sm text-blue-800 font-semibold">
               📍 위치 확인 중...
             </p>
@@ -210,7 +230,7 @@ export function UserInputPage({ onSubmit, onAdminAccess, existingRecords }: User
         )}
 
         {/* 위치 상태 및 재시도 안내 */}
-        {locationStatus !== 'allowed' && (
+        {locationStatus !== 'allowed' && locationStatus !== 'pending' && (
            <div className="mb-4" role="status" aria-live="polite" aria-atomic="true">
              {locationStatus === 'checking' && (
                <p className="text-sm text-gray-600 text-center">위치 확인 중입니다...</p>
@@ -346,9 +366,9 @@ export function UserInputPage({ onSubmit, onAdminAccess, existingRecords }: User
       <footer className="px-5 py-4 bg-white border-t border-gray-200">
         <button
           onClick={handleSubmit}
-          disabled={!plateNumber || !selectedDuration || !selectedLocation}
+          disabled={!plateNumber || !selectedDuration || !selectedLocation || locationStatus !== 'allowed'}
           className={`w-full py-4 text-lg font-bold rounded transition-all duration-200 ${
-            plateNumber && selectedDuration && selectedLocation
+            plateNumber && selectedDuration && selectedLocation && locationStatus === 'allowed'
               ? 'bg-[#1e4a8a] text-white hover:bg-[#1e3a6a] hover:shadow-lg cursor-pointer active:scale-98'
               : 'bg-gray-300 text-gray-500 cursor-not-allowed opacity-60'
           }`}
