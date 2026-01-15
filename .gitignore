@@ -5,3 +5,5 @@ build/
 .DS_Store
 .env
 vite.config.ts.timestamp
+.vercel
+.env*.local
