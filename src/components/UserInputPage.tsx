@@ -4,33 +4,24 @@ import { ParkingRecord, LocationStatus } from '../types';
 import {
   LIBRARY_COORDS,
   ALLOWED_RADIUS_METERS,
-  ADMIN_PASSWORD,
-  ADMIN_LONG_PRESS_MS,
-  ADMIN_SHIFT_TRIGGER_COUNT,
   DURATIONS,
   LOCATIONS
 } from '../constants';
-import { calculateDistance, getPlatform } from '../utils';
+import { calculateDistance } from '../utils';
 
 interface UserInputPageProps {
   onSubmit: (plateNumber: string, duration: string, location: string) => void;
-  onAdminAccess: () => void;
   existingRecords: ParkingRecord[];
 }
 
-export function UserInputPage({ onSubmit, onAdminAccess, existingRecords }: UserInputPageProps) {
+export function UserInputPage({ onSubmit, existingRecords }: UserInputPageProps) {
   const [plateNumber, setPlateNumber] = useState('');
   const [selectedDuration, setSelectedDuration] = useState<string>('');
   const [selectedLocation, setSelectedLocation] = useState<string>('');
-  const [showAdminModal, setShowAdminModal] = useState(false);
-  const [adminPassword, setAdminPassword] = useState('');
-  const [passwordError, setPasswordError] = useState(false);
-  const [showPermissionHelp, setShowPermissionHelp] = useState(false);
   
   // GPS 위치 확인 상태
   const [locationStatus, setLocationStatus] = useState<LocationStatus>('checking');
   const [distanceFromLibrary, setDistanceFromLibrary] = useState<number | null>(null);
-  const [isCheckingLocation, setIsCheckingLocation] = useState(false);
   
   // 차량번호 입력 필드 ref (자동 포커스용)
   const plateInputRef = useRef<HTMLInputElement>(null);
@@ -81,73 +72,12 @@ export function UserInputPage({ onSubmit, onAdminAccess, existingRecords }: User
     checkLocation();
   }, []);
 
-  // 키보드 단축키: Shift 키 5회 → 관리자 모달
-  useEffect(() => {
-    let shiftCount = 0;
-    let resetTimer: number | null = null;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Shift') {
-        shiftCount++;
-        if (resetTimer) window.clearTimeout(resetTimer);
-
-        if (shiftCount >= ADMIN_SHIFT_TRIGGER_COUNT) {
-          setShowAdminModal(true);
-          shiftCount = 0;
-          return;
-        }
-
-        resetTimer = window.setTimeout(() => {
-          shiftCount = 0;
-        }, 1500);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      if (resetTimer) window.clearTimeout(resetTimer);
-    };
-  }, []);
-
-  // 관리자 진입: 로고 길게 누르기
-  const adminPressTimerRef = useRef<number | null>(null);
-  const startAdminPress = () => {
-    if (adminPressTimerRef.current) window.clearTimeout(adminPressTimerRef.current);
-    adminPressTimerRef.current = window.setTimeout(() => {
-      setShowAdminModal(true);
-    }, ADMIN_LONG_PRESS_MS);
-  };
-  const cancelAdminPress = () => {
-    if (adminPressTimerRef.current) {
-      window.clearTimeout(adminPressTimerRef.current);
-      adminPressTimerRef.current = null;
-    }
-  };
-
   // 차량번호 입력 핸들러 (4자리 숫자만)
   const handlePlateNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/\D/g, ''); // 숫자만 허용
     if (value.length <= 4) {
       setPlateNumber(value);
     }
-  };
-
-  const handleAdminLogin = () => {
-    if (adminPassword === ADMIN_PASSWORD) {
-      setShowAdminModal(false);
-      setAdminPassword('');
-      setPasswordError(false);
-      onAdminAccess();
-    } else {
-      setPasswordError(true);
-    }
-  };
-
-  const handleCloseModal = () => {
-    setShowAdminModal(false);
-    setAdminPassword('');
-    setPasswordError(false);
   };
 
   const handleSubmit = () => {
@@ -162,15 +92,7 @@ export function UserInputPage({ onSubmit, onAdminAccess, existingRecords }: User
       <header className="bg-[#1e4a8a] text-white px-5 py-4">
         <div className="flex items-center gap-3">
           <div className="w-11 h-11 bg-white rounded flex items-center justify-center">
-            <BookOpen className="w-6 h-6 text-[#1e4a8a]" 
-              onMouseDown={startAdminPress}
-              onMouseUp={cancelAdminPress}
-              onMouseLeave={cancelAdminPress}
-              onTouchStart={startAdminPress}
-              onTouchEnd={cancelAdminPress}
-              onTouchCancel={cancelAdminPress}
-              title="관리자 모드"
-            />
+            <BookOpen className="w-6 h-6 text-[#1e4a8a]" />
           </div>
           <div>
             <h1 className="text-xl font-bold">도서관 이용확인증</h1>
@@ -346,141 +268,19 @@ export function UserInputPage({ onSubmit, onAdminAccess, existingRecords }: User
         </div>
       </main>
 
-      {/* Footer Action Button */}
       <footer className="px-5 py-4 bg-white border-t border-gray-200">
         <button
           onClick={handleSubmit}
-          disabled={
-            !plateNumber || 
-            !selectedDuration || 
-            !selectedLocation || 
-            locationStatus !== 'allowed'
-          }
+          disabled={!plateNumber || !selectedDuration || !selectedLocation}
           className={`w-full py-4 text-lg font-bold rounded transition-all duration-200 ${
-            plateNumber && selectedDuration && selectedLocation && locationStatus === 'allowed'
+            plateNumber && selectedDuration && selectedLocation
               ? 'bg-[#1e4a8a] text-white hover:bg-[#1e3a6a] hover:shadow-lg cursor-pointer active:scale-98'
               : 'bg-gray-300 text-gray-500 cursor-not-allowed opacity-60'
           }`}
         >
-          {locationStatus === 'checking' ? (
-            <span className="flex items-center justify-center gap-2">
-              <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-              위치 확인 중...
-            </span>
-          ) : '등록하기'}
+          등록하기
         </button>
-        <p className="text-xs text-gray-500 text-center mt-2">
-          관리자: 로고 길게 누르기 또는 Shift×5
-        </p>
       </footer>
-
-      {/* Admin Password Modal */}
-      {showAdminModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-5">
-          <div className="bg-white p-6 max-w-sm w-full">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">관리자 인증</h2>
-            <p className="text-sm text-gray-600 mb-4">비밀번호를 입력하세요</p>
-            
-            <input
-              type="password"
-              value={adminPassword}
-              onChange={(e) => {
-                setAdminPassword(e.target.value);
-                setPasswordError(false);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  handleAdminLogin();
-                }
-              }}
-              placeholder="비밀번호"
-              className={`w-full px-3 py-2 text-base border-2 rounded transition-all duration-200 mb-1 ${
-                passwordError
-                  ? 'border-red-500 focus:border-red-500 focus:ring-4 focus:ring-red-100'
-                  : 'border-gray-300 focus:border-[#1e4a8a] focus:ring-4 focus:ring-blue-100'
-              }`}
-              autoFocus
-            />
-            
-            {passwordError && (
-              <p className="text-red-600 text-sm mb-3">비밀번호가 올바르지 않습니다</p>
-            )}
-            
-            <div className="flex gap-2 mt-4">
-              <button
-                onClick={handleCloseModal}
-                className="flex-1 py-2 text-gray-700 border-2 border-gray-300 rounded hover:bg-gray-50 font-bold cursor-pointer"
-              >
-                취소
-              </button>
-              <button
-                onClick={handleAdminLogin}
-                className="flex-1 py-2 bg-[#1e4a8a] text-white rounded hover:bg-[#1e3a6a] font-bold cursor-pointer"
-              >
-                확인
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Permission Help Modal */}
-      {showPermissionHelp && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-5">
-          <div className="bg-white p-6 max-w-sm w-full">
-            <h2 className="text-xl font-bold text-gray-800 mb-2">위치 권한 설정 가이드</h2>
-            {(() => {
-              const platform = getPlatform();
-              if (platform === 'ios') {
-                return (
-                  <ol className="list-decimal pl-5 text-sm text-gray-700 space-y-1">
-                    <li>설정 앱 → 개인정보 보호 및 보안 → 위치 서비스</li>
-                    <li>Safari 웹사이트 또는 사용하는 브라우저 선택</li>
-                    <li>허용: "앱을 사용하는 동안" 또는 "다음에 확인"</li>
-                    <li>브라우저 재실행 후 등록 다시 시도</li>
-                  </ol>
-                );
-              }
-              if (platform === 'android') {
-                return (
-                  <ol className="list-decimal pl-5 text-sm text-gray-700 space-y-1">
-                    <li>설정 → 앱 → Chrome(또는 사용하는 브라우저)</li>
-                    <li>권한 → 위치 → 허용</li>
-                    <li>브라우저에서 ⋮ 메뉴 → 설정 → 사이트 설정 → 위치 허용 확인</li>
-                    <li>브라우저 재실행 후 등록 다시 시도</li>
-                  </ol>
-                );
-              }
-              return (
-                <ol className="list-decimal pl-5 text-sm text-gray-700 space-y-1">
-                  <li>주소창 왼쪽 자물쇠 아이콘 클릭</li>
-                  <li>사이트 설정 또는 권한 관리 선택</li>
-                  <li>위치를 "허용"으로 변경</li>
-                  <li>페이지 새로고침 후 다시 시도</li>
-                </ol>
-              );
-            })()}
-
-            <div className="flex gap-2 mt-4">
-              <button
-                onClick={() => setShowPermissionHelp(false)}
-                className="flex-1 py-2 text-gray-700 border-2 border-gray-300 rounded hover:bg-gray-50 font-bold cursor-pointer"
-              >
-                닫기
-              </button>
-              <button
-                onClick={() => {
-                  setShowPermissionHelp(false);
-                  checkLocation();
-                }}
-                className="flex-1 py-2 bg-[#1e4a8a] text-white rounded hover:bg-[#1e3a6a] font-bold cursor-pointer"
-              >
-                다시 확인
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
