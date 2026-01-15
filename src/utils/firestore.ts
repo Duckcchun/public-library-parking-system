@@ -22,8 +22,10 @@ export const addParkingRecord = async (record: Omit<ParkingRecord, 'id'>): Promi
       timestamp: Timestamp.fromDate(record.timestamp)
     });
     return docRef.id;
-  } catch (error) {
+  } catch (error: any) {
     console.error('주차 기록 추가 실패:', error);
+    console.error('에러 코드:', error?.code);
+    console.error('에러 메시지:', error?.message);
     throw error;
   }
 };
@@ -69,8 +71,10 @@ export const subscribeToParkingRecords = (
     })) as ParkingRecord[];
     
     callback(records);
-  }, (error) => {
+  }, (error: any) => {
     console.error('실시간 구독 오류:', error);
+    console.error('에러 코드:', error?.code);
+    console.error('에러 메시지:', error?.message);
   });
 
   return unsubscribe;

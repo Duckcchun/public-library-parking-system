@@ -36,7 +36,7 @@ export function UserInputPage({ onSubmit, onAdminAccess, existingRecords }: User
   const plateInputRef = useRef<HTMLInputElement>(null);
 
   // 중복 차량번호 확인
-  const duplicateCount = existingRecords.filter(r => r.plateNumber === plateNumber).length;
+  const duplicateCount = existingRecords?.filter(r => r.plateNumber === plateNumber).length || 0;
 
   // 위치 확인 로직 함수화 및 페이지 로드시 자동 실행
   const checkLocation = () => {
