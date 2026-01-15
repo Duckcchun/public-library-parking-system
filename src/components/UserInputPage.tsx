@@ -22,6 +22,7 @@ export function UserInputPage({ onSubmit, existingRecords }: UserInputPageProps)
   // GPS 위치 확인 상태
   const [locationStatus, setLocationStatus] = useState<LocationStatus>('checking');
   const [distanceFromLibrary, setDistanceFromLibrary] = useState<number | null>(null);
+  const [isCheckingLocation, setIsCheckingLocation] = useState(false);
   
   // 차량번호 입력 필드 ref (자동 포커스용)
   const plateInputRef = useRef<HTMLInputElement>(null);
