@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { UserInputPage } from './components/UserInputPage';
 import { SuccessPage } from './components/SuccessPage';
+import { AdminDashboard } from './components/AdminDashboard';
 import { ParkingRecord, ViewType } from './types';
 import { addParkingRecord, subscribeToParkingRecords, deleteParkingRecord } from './utils/firestore';
 
@@ -53,6 +54,10 @@ export default function App() {
     setRegistrationData(null);
   };
 
+  const handleViewAdmin = () => {
+    setCurrentView('admin');
+  };
+
   const handleBackToInput = () => {
     setCurrentView('input');
   };
@@ -71,6 +76,7 @@ export default function App() {
       {currentView === 'input' && (
         <UserInputPage 
           onSubmit={handleSubmit}
+          onAdminAccess={handleViewAdmin}
           existingRecords={parkingRecords}
         />
       )}
@@ -80,6 +86,14 @@ export default function App() {
           duration={registrationData.duration}
           location={registrationData.location}
           onClose={handleClose}
+        />
+      )}
+      {currentView === 'admin' && (
+        <AdminDashboard 
+          onBack={handleBackToInput}
+          records={parkingRecords}
+          onDeleteRecord={handleDeleteRecord}
+          lastAddedRecordId={lastAddedRecordId ?? undefined}
         />
       )}
     </div>
