@@ -81,7 +81,6 @@ export function UserInputPage({ onSubmit, onAdminAccess, existingRecords }: User
     checkLocation();
   }, []);
 
-  // 키보드 단축키: Shift 키 5회 → 관리자 모달
   useEffect(() => {
     let shiftCount = 0;
     let resetTimer: number | null = null;
@@ -110,7 +109,6 @@ export function UserInputPage({ onSubmit, onAdminAccess, existingRecords }: User
     };
   }, []);
 
-  // 관리자 진입: 로고 길게 누르기
   const adminPressTimerRef = useRef<number | null>(null);
   const startAdminPress = () => {
     if (adminPressTimerRef.current) window.clearTimeout(adminPressTimerRef.current);
@@ -169,7 +167,6 @@ export function UserInputPage({ onSubmit, onAdminAccess, existingRecords }: User
               onTouchStart={startAdminPress}
               onTouchEnd={cancelAdminPress}
               onTouchCancel={cancelAdminPress}
-              title="관리자 모드"
             />
           </div>
           <div>
